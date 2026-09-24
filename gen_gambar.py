@@ -1550,6 +1550,126 @@ def bab17_seimbang():
     simpan(fig, "bab17-seimbang")
 
 
+# =====================================================================
+#  Bab 18 -- Kuantisasi vektor dan kompresi gambar
+# =====================================================================
+def bab18_lloydmax():
+    from scipy.stats import norm
+    from bab18_lloydmax import lloyd_max
+    c8, t8, _, _ = lloyd_max(8)
+    fig, ax = plt.subplots(1, 2, figsize=(4.7, 1.9))
+    x = np.linspace(-3.5, 3.5, 400)
+    ax[0].plot(x, norm.pdf(x), color=BIRU, lw=1)
+    for a in t8[1:-1]:
+        ax[0].axvline(a, color=ABU_GARIS, lw=0.6, ls="--")
+    ax[0].scatter(c8, np.zeros(8), marker="x", s=18, lw=1.0,
+                  color=JINGGA, zorder=3, clip_on=False)
+    ax[0].set_title("K = 8: ambang (garis) dan level (silang)",
+                    fontsize=6.5)
+    ax[0].set_xlabel("x")
+    ax[0].set_ylim(0, 0.43)
+    c32 = lloyd_max(32)[0]
+    j = np.arange(32)
+    u = (j + 0.5) / 32
+    ax[1].plot(j, np.sqrt(3) * norm.ppf(u), color=HIJAU, lw=0.9,
+               label=r"kerapatan $\propto \varphi^{1/3}$")
+    ax[1].plot(j, norm.ppf(u), color=ABU, lw=0.9, ls="--",
+               label=r"kerapatan $\propto \varphi$")
+    ax[1].scatter(j, c32, s=5, color=JINGGA, zorder=3,
+                  label="Lloyd-Max")
+    ax[1].set_title("K = 32: letak level", fontsize=6.5)
+    ax[1].set_xlabel("urutan level")
+    ax[1].legend(fontsize=5.5, loc="upper left")
+    for s in ax:
+        _rapikan(s)
+    fig.tight_layout(w_pad=1.0)
+    simpan(fig, "bab18-lloydmax")
+
+
+def bab18_laju():
+    from bab18_laju import DAFTAR_K, kurva
+    rng = np.random.default_rng(BENIH)
+    fig, ax = plt.subplots(figsize=(4.7, 2.1))
+    K = np.array(DAFTAR_K)
+    warna = [BIRU, JINGGA, HIJAU, MERAH, ABU, "#8A6D3B"]
+    for d, w in zip((1, 2, 3, 5, 10, 20), warna):
+        _, uji = kurva(d, rng)
+        ax.plot(K, uji / uji[0], "o-", ms=2.5, lw=0.9, color=w,
+                label=f"d = {d}")
+        ax.plot(K, (K / 4.0) ** (-2 / d), ls=":", lw=0.7, color=w)
+    ax.set_xscale("log", base=2)
+    ax.set_yscale("log")
+    ax.set_xticks(K)
+    ax.set_xticklabels([str(k) for k in K])
+    ax.set_xlabel("K")
+    ax.set_ylabel("D(K) / D(4), data uji")
+    ax.legend(fontsize=5.5, ncol=2, loc="lower left")
+    kunci_label(ax, "x", "y")
+    _rapikan(ax)
+    fig.tight_layout()
+    simpan(fig, "bab18-laju")
+
+
+def bab18_sarang():
+    from matplotlib.patches import Polygon
+    from scipy.spatial import Voronoi
+    from sklearn.cluster import KMeans
+    rng = np.random.default_rng(BENIH)
+    X = rng.uniform(size=(400_000, 2))
+    C = KMeans(256, n_init=1, random_state=BENIH).fit(X).cluster_centers_
+    v = Voronoi(C)
+    warna = {5: BIRU_MUDA, 6: "white", 7: JINGGA_MUDA}
+    fig, ax = plt.subplots(figsize=(2.9, 2.9))
+    for r in v.point_region:
+        reg = v.regions[r]
+        if -1 in reg:
+            continue
+        P = v.vertices[reg]
+        if (P < 0).any() or (P > 1).any():
+            continue
+        ax.add_patch(Polygon(P, closed=True, lw=0.4, ec=ABU,
+                             fc=warna.get(len(reg), MERAH_MUDA)))
+    ax.scatter(*C.T, s=1.5, color=BIRU, lw=0)
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.set_aspect("equal")
+    ax.set_xticks([])
+    ax.set_yticks([])
+    for sisi in ax.spines.values():
+        sisi.set_color(ABU_GARIS)
+    fig.tight_layout()
+    simpan(fig, "bab18-sarang")
+
+
+def bab18_warna():
+    from sklearn.datasets import load_sample_image
+    from bab18_warna import kuantisasi_warna
+    gambar = load_sample_image("china.jpg")
+    X = gambar.reshape(-1, 3).astype(float)
+    fig, ax = plt.subplots(2, 3, figsize=(4.7, 2.45))
+    panel = [(gambar, "asli, 24 bit per piksel")]
+    for K in (4, 16, 64, 256):
+        palet, label = kuantisasi_warna(gambar, K)
+        hasil = palet[label].reshape(gambar.shape)
+        panel.append((hasil.round().astype(np.uint8),
+                      f"K = {K}, {int(np.log2(K))} bit per piksel"))
+        if K == 16:
+            galat = np.sqrt(((X - palet[label]) ** 2).sum(axis=1))
+    for s, (g, judul) in zip(ax.flat, panel):
+        s.imshow(g)
+        s.set_title(judul, fontsize=5.5)
+    ax.flat[5].imshow(galat.reshape(gambar.shape[:2]), cmap="Greys",
+                      vmin=0, vmax=80)
+    ax.flat[5].set_title("K = 16: jarak ke warna palet", fontsize=5.5)
+    for s in ax.flat:
+        s.set_xticks([])
+        s.set_yticks([])
+        for sisi in s.spines.values():
+            sisi.set_visible(False)
+    fig.tight_layout(pad=0.3, w_pad=0.3, h_pad=1.2)
+    simpan(fig, "bab18-warna")
+
+
 if __name__ == "__main__":
     pola = re.compile(r"^bab\d\d_")
     pilihan = sys.argv[1:]

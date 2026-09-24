@@ -123,6 +123,13 @@ Versi yang dipakai buku: Python 3.9.6 dengan pustaka di `requirements.txt`. Seti
 - `bab17_fuzzy.py`: fuzzy c-means dari nol.
 - `bab17_seimbang.py`: K-means dengan klaster berukuran sama.
 
+### Bab 18 - Kuantisasi Vektor dan Kompresi Gambar
+
+- `bab18_blok.py`: kuantisasi blok gambar abu-abu dan product quantization.
+- `bab18_laju.py`: distorsi lawan banyaknya centroid pada data seragam.
+- `bab18_lloydmax.py`: kuantisasi skalar Lloyd-Max untuk sebaran normal baku.
+- `bab18_warna.py`: kuantisasi warna gambar china.jpg dari scikit-learn.
+
 ## Lisensi
 
 Kode boleh dipakai, disalin, diubah, dan disebarluaskan secara bebas untuk keperluan apa pun, termasuk komersial, tanpa kewajiban mencantumkan sumber (lisensi MIT-0). Teks buku tidak termasuk dalam lisensi ini.

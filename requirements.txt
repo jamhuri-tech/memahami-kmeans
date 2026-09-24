@@ -5,3 +5,4 @@ scikit-learn==1.6.1
 matplotlib==3.9.4
 joblib==1.5.3
 threadpoolctl==3.6.0
+pillow==11.3.0
