@@ -104,6 +104,25 @@ Versi yang dipakai buku: Python 3.9.6 dengan pustaka di `requirements.txt`. Seti
 - `bab14_relaksasi.py`: kernel K-means sebagai masalah nilai eigen yang dikekang.
 - `bab14_spektral.py`: spectral clustering dari nol (Ng, Jordan, dan Weiss).
 
+### Bab 15 - Mempercepat Lloyd: Elkan dan Hamerly
+
+- `bab15_cepat.py`: algoritma Lloyd yang dipercepat dengan ketaksamaan segitiga.
+- `bab15_cocok.py`: Elkan dan Hamerly memberi label yang sama dengan Lloyd pada
+- `bab15_sklearn.py`: KMeans(algorithm="elkan") lawan algorithm="lloyd" pada
+
+### Bab 16 - Mini-Batch dan Online K-Means
+
+- `bab16_besar.py`: KMeans lawan MiniBatchKMeans pada 500 000 titik.
+- `bab16_cocok.py`: minibatch lawan MiniBatchKMeans.partial_fit dengan batch yang
+- `bab16_langkah.py`: ukuran langkah 1/n_k lawan ukuran langkah tetap.
+- `bab16_mini.py`: K-means online (MacQueen) dan mini-batch K-means.
+
+### Bab 17 - Fuzzy C-Means, Bisecting K-Means, dan Klaster Seimbang
+
+- `bab17_bisecting.py`: bisecting K-means dari nol, lawan K-means dan
+- `bab17_fuzzy.py`: fuzzy c-means dari nol.
+- `bab17_seimbang.py`: K-means dengan klaster berukuran sama.
+
 ## Lisensi
 
 Kode boleh dipakai, disalin, diubah, dan disebarluaskan secara bebas untuk keperluan apa pun, termasuk komersial, tanpa kewajiban mencantumkan sumber (lisensi MIT-0). Teks buku tidak termasuk dalam lisensi ini.

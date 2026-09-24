@@ -1273,6 +1273,283 @@ def bab14_gamma():
     simpan(fig, "bab14-gamma")
 
 
+# =====================================================================
+#  Bab 15 -- Mempercepat Lloyd: Elkan dan Hamerly
+# =====================================================================
+def bab15_segitiga():
+    from matplotlib.patches import Circle
+    fig, ax = plt.subplots(figsize=(3.6, 2.2))
+    x, c, c2 = np.array([0.6, 0.5]), np.array([0.0, 0.0]), \
+        np.array([3.2, 0.9])
+    u = np.hypot(*(x - c))
+    ax.add_patch(Circle(c, 2 * u, fill=False, ls="--", color=ABU,
+                        lw=0.7))
+    ax.add_patch(Circle(x, u, fill=False, color=JINGGA, lw=0.8))
+    for p, nama, w in ((x, r"$\mathbf{x}$", "black"),
+                       (c, r"$\boldsymbol{\mu}_a$", BIRU),
+                       (c2, r"$\boldsymbol{\mu}_b$", MERAH)):
+        ax.plot(*p, "o", ms=4, color=w)
+        ax.annotate(nama, p, xytext=(4, 4), textcoords="offset points",
+                    fontsize=7, color=w)
+    ax.annotate("", xy=x, xytext=c,
+                arrowprops=dict(arrowstyle="-", color=JINGGA, lw=0.8))
+    ax.text(0.12, 0.38, "$u$", fontsize=7, color=JINGGA)
+    ax.text(1.4, -1.35, r"lingkaran berjari-jari $2u$" + "\n" +
+            r"di sekitar $\boldsymbol{\mu}_a$", fontsize=6, color=ABU)
+    ax.set_xlim(-1.8, 3.8)
+    ax.set_ylim(-1.8, 1.8)
+    ax.set_aspect("equal")
+    ax.axis("off")
+    fig.tight_layout()
+    simpan(fig, "bab15-segitiga")
+
+
+def bab15_periterasi():
+    from sklearn.cluster import kmeans_plusplus
+    from bab15_cepat import elkan, hamerly, lloyd_hitung
+    from bab15_cocok import data_uji
+    data = {n: (X, K) for n, X, K in data_uji()}
+    fig, ax = plt.subplots(1, 2, figsize=(4.7, 1.9), sharey=False)
+    for s, nama in zip(ax, ("blobs 20k", "acak d=50")):
+        X, K = data[nama]
+        C0, _ = kmeans_plusplus(X, K, random_state=0)
+        for f, w, lab in ((lloyd_hitung, ABU, "Lloyd"),
+                          (elkan, BIRU, "Elkan"),
+                          (hamerly, JINGGA, "Hamerly")):
+            c = np.array(f(X, C0)[3])
+            s.semilogy(np.arange(1, len(c) + 1), c, "-", lw=0.9,
+                       color=w, label=lab)
+        s.set_title(nama, fontsize=7)
+        s.set_xlabel("iterasi")
+        _rapikan(s)
+    ax[0].set_ylabel("jarak dihitung")
+    ax[0].legend(fontsize=5.5)
+    fig.tight_layout(w_pad=0.8)
+    simpan(fig, "bab15-periterasi")
+
+
+def bab15_waktu():
+    import time
+    from sklearn.cluster import KMeans, kmeans_plusplus
+    from bab15_cepat import elkan, hamerly, lloyd_hitung
+    from bab15_cocok import data_uji
+
+    def ukur(f):
+        terbaik = np.inf
+        for _ in range(3):
+            t0 = time.perf_counter()
+            f()
+            terbaik = min(terbaik, time.perf_counter() - t0)
+        return terbaik
+
+    nama_data, hasil = [], []
+    for nama, X, K in data_uji()[3:]:
+        C0, _ = kmeans_plusplus(X, K, random_state=0)
+        hasil.append([ukur(lambda: g(X, C0)) for g in
+                      (lloyd_hitung, elkan, hamerly)] +
+                     [ukur(lambda: KMeans(K, init=C0, n_init=1, tol=0,
+                                          algorithm=a).fit(X))
+                      for a in ("lloyd", "elkan")])
+        nama_data.append(nama)
+    hasil = np.array(hasil)
+    fig, ax = plt.subplots(figsize=(4.7, 2.0))
+    lebar = 0.16
+    for j, (lab, w) in enumerate((("Lloyd (NumPy)", ABU),
+                                  ("Elkan (NumPy)", BIRU),
+                                  ("Hamerly (NumPy)", JINGGA),
+                                  ("sklearn lloyd", HIJAU),
+                                  ("sklearn elkan", MERAH))):
+        ax.bar(np.arange(len(nama_data)) + (j - 2) * lebar, hasil[:, j],
+               lebar, color=w, label=lab)
+    ax.set_yscale("log")
+    ax.set_xticks(range(len(nama_data)))
+    ax.set_xticklabels(nama_data)
+    ax.set_ylabel("waktu (detik)")
+    ax.set_ylim(0.01, 40)
+    ax.legend(fontsize=5, ncol=3, loc="upper center")
+    kunci_label(ax, "x", "y")
+    _rapikan(ax)
+    fig.tight_layout()
+    simpan(fig, "bab15-waktu")
+    for n, h in zip(nama_data, hasil):
+        print("  ", n, " ".join(f"{v:.3f}" for v in h))
+
+
+# =====================================================================
+#  Bab 16 -- Mini-batch dan online K-means
+# =====================================================================
+def bab16_jalur():
+    from sklearn.cluster import kmeans_plusplus
+    from bab04_data import gumpalan
+    X, _ = gumpalan(20000)
+    C0, _ = kmeans_plusplus(X, 5, random_state=0)
+    urutan = np.random.default_rng(BENIH).permutation(len(X))[:3000]
+    fig, ax = plt.subplots(1, 2, figsize=(4.7, 2.1), sharey=True)
+    for s, eta, judul in ((ax[0], None, r"langkah $1/n_k$"),
+                          (ax[1], 0.1, r"langkah tetap $0{,}1$")):
+        C = C0.astype(float).copy()
+        n_k = np.zeros(5)
+        jalur = [C.copy()]
+        for i in urutan:
+            k = ((C - X[i]) ** 2).sum(axis=1).argmin()
+            n_k[k] += 1
+            C[k] += (X[i] - C[k]) * (1 / n_k[k] if eta is None else eta)
+            jalur.append(C.copy())
+        jalur = np.array(jalur)
+        s.scatter(X[:4000, 0], X[:4000, 1], s=0.5, color=ABU_GARIS, lw=0)
+        for k in range(5):
+            s.plot(jalur[:, k, 0], jalur[:, k, 1], "-", lw=0.5,
+                   color=WARNA_K[k])
+            s.plot(*jalur[-1, k], "x", ms=4, color="black", mew=1.0)
+        s.set_title(judul, fontsize=7)
+        s.set_aspect("equal")
+        _rapikan(s)
+    fig.tight_layout(w_pad=0.5)
+    simpan(fig, "bab16-jalur")
+
+
+def bab16_langkah():
+    from sklearn.cluster import kmeans_plusplus
+    from bab04_data import gumpalan
+    from bab05_lloyd import lloyd
+    from bab16_cocok import inersia
+    X, _ = gumpalan(20000)
+    C0, _ = kmeans_plusplus(X, 5, random_state=0)
+    C_l, _, _ = lloyd(X, C0)
+    J_l = inersia(X, C_l)
+    urutan = np.concatenate([np.random.default_rng(BENIH + p)
+                             .permutation(len(X)) for p in range(3)])
+    fig, ax = plt.subplots(figsize=(4.7, 1.9))
+    for eta, w, lab in ((None, BIRU, r"$1/n_k$"), (0.001, HIJAU, "0,001"),
+                        (0.01, JINGGA, "0,01"), (0.1, MERAH, "0,1")):
+        C = C0.astype(float).copy()
+        n_k = np.zeros(5)
+        t_, v = [], []
+        for j, i in enumerate(urutan, 1):
+            k = ((C - X[i]) ** 2).sum(axis=1).argmin()
+            n_k[k] += 1
+            C[k] += (X[i] - C[k]) * (1 / n_k[k] if eta is None else eta)
+            if j % 500 == 0:
+                t_.append(j)
+                v.append(inersia(X, C) / J_l - 1)
+        ax.loglog(t_, np.maximum(v, 1e-8), color=w, lw=0.9, label=lab)
+    ax.set_xlabel("titik yang sudah dilihat")
+    ax.set_ylabel(r"$J/J_{\mathrm{Lloyd}} - 1$")
+    ax.legend(fontsize=5.5, title="ukuran langkah", title_fontsize=5.5)
+    kunci_label(ax, "x", "y")
+    _rapikan(ax)
+    fig.tight_layout()
+    simpan(fig, "bab16-langkah")
+
+
+def bab16_waktu():
+    import time
+    from sklearn.cluster import KMeans, MiniBatchKMeans
+    from bab16_besar import data_besar
+    X = data_besar()
+    hasil = []
+    for s in range(5):
+        t0 = time.perf_counter()
+        J = KMeans(50, n_init=1, random_state=s).fit(X).inertia_
+        hasil.append(("KMeans", time.perf_counter() - t0, J))
+        for b in (256, 1024, 4096):
+            t0 = time.perf_counter()
+            mb = MiniBatchKMeans(50, batch_size=b, n_init=1,
+                                 random_state=s).fit(X)
+            hasil.append((f"mini-batch {b}", time.perf_counter() - t0,
+                          -mb.score(X)))
+    J_min = min(h[2] for h in hasil)
+    fig, ax = plt.subplots(figsize=(4.7, 2.0))
+    for nama, w, m in (("KMeans", ABU, "s"), ("mini-batch 256", BIRU, "o"),
+                       ("mini-batch 1024", JINGGA, "^"),
+                       ("mini-batch 4096", HIJAU, "D")):
+        tt = [h[1] for h in hasil if h[0] == nama]
+        jj = [h[2] / J_min - 1 for h in hasil if h[0] == nama]
+        ax.scatter(tt, jj, s=14, marker=m, color=w, label=nama, lw=0)
+        print("  ", nama, "median waktu", f"{np.median(tt):.2f}")
+    ax.set_xscale("log")
+    ax.set_xlabel("waktu (detik)")
+    ax.set_ylabel(r"$J/J^* - 1$")
+    ax.legend(fontsize=5.5)
+    kunci_label(ax, "x")
+    _rapikan(ax)
+    fig.tight_layout()
+    simpan(fig, "bab16-waktu")
+
+
+# =====================================================================
+#  Bab 17 -- Fuzzy c-means, bisecting K-means, dan klaster seimbang
+# =====================================================================
+def bab17_fuzzy():
+    from sklearn.cluster import KMeans
+    from bab04_data import gumpalan
+    from bab17_fuzzy import fcm
+    X, _ = gumpalan()
+    C0 = KMeans(5, n_init=10, random_state=BENIH).fit(X).cluster_centers_
+    gx, gy = np.meshgrid(np.linspace(-3, 12, 300), np.linspace(-3, 9, 240))
+    G = np.column_stack([gx.ravel(), gy.ravel()])
+    fig, ax = plt.subplots(1, 3, figsize=(4.7, 1.7), sharey=True)
+    for s, m in zip(ax, (1.5, 2, 5)):
+        _, C, _ = fcm(X, C0, m)
+        d2 = ((G[:, None] - C[None]) ** 2).sum(axis=2)
+        w = d2 ** (-1 / (m - 1))
+        U = (w / w.sum(axis=1, keepdims=True)).max(axis=1)
+        im = s.imshow(U.reshape(gx.shape), origin="lower", cmap="Blues",
+                      vmin=0.2, vmax=1, extent=(-3, 12, -3, 9),
+                      aspect="auto")
+        s.scatter(X[:, 0], X[:, 1], s=0.4, color=ABU, lw=0)
+        s.scatter(*C.T, marker="x", s=12, lw=0.9, color=MERAH)
+        s.set_title(rf"$m = {angka_mat(m, 1) if m != int(m) else int(m)}$",
+                    fontsize=7)
+        s.set_aspect("equal")
+        _rapikan(s)
+    cb = fig.colorbar(im, ax=ax, shrink=0.85, pad=0.02)
+    cb.set_label("keanggotaan terbesar", fontsize=6)
+    cb.ax.tick_params(labelsize=5.5)
+    simpan(fig, "bab17-fuzzy")
+
+
+def bab17_bisecting():
+    from bab04_data import gumpalan
+    from bab17_bisecting import bisecting
+    X, _ = gumpalan()
+    fig, ax = plt.subplots(1, 4, figsize=(4.7, 1.45), sharey=True)
+    for s, K in zip(ax, (2, 3, 4, 5)):
+        lab, _ = bisecting(X, K, 0)
+        s.scatter(X[:, 0], X[:, 1], s=0.8, c=_warna(lab), lw=0)
+        s.set_title(f"$K = {K}$", fontsize=7)
+        s.set_aspect("equal")
+        s.set_xticks([])
+        s.set_yticks([])
+        for sisi in s.spines.values():
+            sisi.set_color(ABU_GARIS)
+    fig.tight_layout(w_pad=0.3)
+    simpan(fig, "bab17-bisecting")
+
+
+def bab17_seimbang():
+    from sklearn.cluster import KMeans
+    from bab17_seimbang import seimbang
+    rng = np.random.default_rng(BENIH)
+    X = rng.uniform(0, 10, (600, 2))
+    km = KMeans(6, n_init=10, random_state=BENIH).fit(X)
+    lab, C, _ = seimbang(X, km.cluster_centers_)
+    warna6 = WARNA_K + ["#8A6D3B"]
+    fig, ax = plt.subplots(1, 2, figsize=(4.7, 2.2), sharey=True)
+    for s, l, CC, judul in ((ax[0], km.labels_, km.cluster_centers_,
+                             "K-means"), (ax[1], lab, C, "seimbang")):
+        s.scatter(X[:, 0], X[:, 1], s=2, c=[warna6[k] for k in l], lw=0)
+        s.scatter(*CC.T, marker="x", s=16, lw=1.0, color="black")
+        uk = sorted(np.bincount(l).tolist())
+        teks = f"semua {uk[0]} titik" if min(uk) == max(uk) \
+            else f"{min(uk)} sampai {max(uk)} titik"
+        s.set_title(f"{judul}: {teks}", fontsize=6.5)
+        s.set_aspect("equal")
+        _rapikan(s)
+    fig.tight_layout(w_pad=0.5)
+    simpan(fig, "bab17-seimbang")
+
+
 if __name__ == "__main__":
     pola = re.compile(r"^bab\d\d_")
     pilihan = sys.argv[1:]
