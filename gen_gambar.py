@@ -105,6 +105,98 @@ def _warna(label):
 
 
 # =====================================================================
+#  Bab 1 -- Mengapa K-means
+# =====================================================================
+def bab01_iris():
+    from sklearn.cluster import KMeans
+    from sklearn.datasets import load_iris
+    X = load_iris().data[:, [2, 3]]
+    km = KMeans(3, n_init=10, random_state=BENIH).fit(X)
+    urut = np.argsort(km.cluster_centers_[:, 0])
+    label = np.argsort(urut)[km.labels_]
+    rng = np.random.default_rng(BENIH)
+    Xg = X + rng.uniform(-0.03, 0.03, X.shape)   # ukuran dibulatkan
+    fig, ax = plt.subplots(1, 2, figsize=(4.7, 2.1), sharey=True)
+    ax[0].scatter(*Xg.T, s=4, color=ABU, lw=0)
+    ax[0].set_title("tanpa label", fontsize=7)
+    ax[1].scatter(*Xg.T, s=4, c=_warna(label), lw=0)
+    ax[1].scatter(*km.cluster_centers_[urut].T, marker="x", s=30, lw=1.3,
+                  color="black")
+    ax[1].set_title("K-means, K = 3", fontsize=7)
+    for s in ax:
+        s.set_xlabel("panjang mahkota (cm)", fontsize=6.5)
+        _rapikan(s)
+    ax[0].set_ylabel("lebar mahkota (cm)", fontsize=6.5)
+    fig.tight_layout(w_pad=0.6)
+    simpan(fig, "bab01-iris")
+
+
+def bab01_langkah():
+    from bab04_data import gumpalan
+    from bab05_lloyd import jarak2, lloyd
+    X, _ = gumpalan()
+    rng = np.random.default_rng(3)
+    C0 = X[rng.choice(len(X), 5, replace=False)]
+    C, label_akhir, r = lloyd(X, C0)
+    label1 = jarak2(X, C0).argmin(axis=1)
+    C1 = r[0][2]
+    fig, ax = plt.subplots(1, 4, figsize=(4.7, 1.45), sharey=True)
+    ax[0].scatter(*X.T, s=1.2, color=ABU_GARIS, lw=0)
+    ax[0].scatter(*C0.T, marker="x", s=20, lw=1.1, color="black")
+    ax[0].set_title("awal", fontsize=6.5)
+    ax[1].scatter(*X.T, s=1.2, c=_warna(label1), lw=0)
+    ax[1].scatter(*C0.T, marker="x", s=20, lw=1.1, color="black")
+    ax[1].set_title("tugaskan", fontsize=6.5)
+    ax[2].scatter(*X.T, s=1.2, c=_warna(label1), lw=0)
+    for k in range(5):
+        ax[2].annotate("", C1[k], C0[k], arrowprops=dict(
+            arrowstyle="->", color="black", lw=0.7))
+    ax[2].scatter(*C1.T, marker="x", s=20, lw=1.1, color="black")
+    ax[2].set_title("perbarui", fontsize=6.5)
+    ax[3].scatter(*X.T, s=1.2, c=_warna(label_akhir), lw=0)
+    ax[3].scatter(*C.T, marker="x", s=20, lw=1.1, color="black")
+    ax[3].set_title(f"ulangi: akhir, {len(r)} iterasi", fontsize=6.5)
+    for s in ax:
+        s.set_aspect("equal")
+        s.set_xticks([])
+        s.set_yticks([])
+        for sisi in s.spines.values():
+            sisi.set_color(ABU_GARIS)
+    fig.tight_layout(w_pad=0.3)
+    simpan(fig, "bab01-langkah")
+    print("  iterasi:", len(r), "J akhir:", ((X - C[label_akhir]) ** 2).sum())
+
+
+# =====================================================================
+#  Bab 2 -- Perkakas matematika secukupnya
+# =====================================================================
+def bab02_gd():
+    from bab04_data import gumpalan
+    y = gumpalan()[0][:, 0]
+    n, rata = len(y), y.mean()
+    f = lambda a: ((y[:, None] - np.atleast_1d(a)[None]) ** 2).sum(0)
+    a_kisi = np.linspace(-2, 11, 300)
+    fig, ax = plt.subplots(1, 3, figsize=(4.7, 1.8), sharey=True)
+    for s, (q, judul) in zip(ax, ((0.3, r"$2\eta n = 0{,}3$"),
+                                  (1.7, r"$2\eta n = 1{,}7$"),
+                                  (1.0, "Newton"))):
+        s.plot(a_kisi, f(a_kisi) / 1000, color=ABU_GARIS, lw=1)
+        a = [10.0]
+        for _ in range(8 if q != 1.0 else 1):
+            a.append(a[-1] - q / (2 * n) * 2 * n * (a[-1] - rata))
+        a = np.array(a)
+        s.plot(a, f(a) / 1000, "o-", ms=2.5, lw=0.7, color=BIRU)
+        s.plot(rata, f(rata)[0] / 1000, "x", ms=5, mew=1.1, color=JINGGA)
+        s.set_title(judul, fontsize=7)
+        s.set_xlabel("a", fontsize=6.5)
+        s.tick_params(labelsize=5.5)
+        _rapikan(s)
+    ax[0].set_ylabel("f(a) / 1000", fontsize=6.5)
+    fig.tight_layout(w_pad=0.5)
+    simpan(fig, "bab02-gd")
+
+
+# =====================================================================
 #  Bab 4 -- Masalah K-means: inersia dan partisi
 # =====================================================================
 def _gambar_partisi(ax, X, label, K, judul):

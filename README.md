@@ -17,6 +17,22 @@ Versi yang dipakai buku: Python 3.9.6 dengan pustaka di `requirements.txt`. Seti
 
 ## Isi per bab
 
+### Bab 1 - Mengapa K-Means
+
+- `bab01_contoh.py`: K-means pada data iris tanpa melihat spesiesnya.
+
+### Bab 2 - Perkakas Matematika Secukupnya
+
+- `bab02_turunan.py`: memeriksa perkakas matematika dengan komputer.
+
+### Bab 3 - Python dan NumPy Secukupnya
+
+- `bab03_acak.py`: benih acak.
+- `bab03_jarak.py`: tiga cara menghitung matriks kuadrat jarak n x K.
+- `bab03_kmeans.py`: KMeans scikit-learn sekilas.
+- `bab03_rata.py`: argmin, rata-rata per klaster, dan blok dengan reshape.
+- `bab03_versi.py`: versi Python dan pustaka yang menghasilkan angka di buku.
+
 ### Bab 4 - Masalah K-Means: Inersia dan Partisi
 
 - `bab04_data.py`: data yang dipakai sepanjang Bagian II.
