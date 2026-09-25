@@ -1670,6 +1670,130 @@ def bab18_warna():
     simpan(fig, "bab18-warna")
 
 
+# =====================================================================
+#  Bab 19 -- Studi kasus: segmentasi pelanggan Online Retail
+# =====================================================================
+def _rfm19():
+    from bab19_data import baca, bersihkan, rfm
+    return rfm(*bersihkan(baca()))
+
+
+def bab19_sebaran():
+    tabel = _rfm19()
+    fig, ax = plt.subplots(2, 3, figsize=(4.7, 2.7))
+    judul = ("R (hari sejak beli terakhir)", "F (banyaknya faktur)",
+             "M (belanja bersih, pound)")
+    for j, v in enumerate("RFM"):
+        x = tabel[v].to_numpy(float)
+        ax[0, j].hist(x, bins=40, color=BIRU, lw=0)
+        ax[0, j].set_title(judul[j], fontsize=6)
+        lx = np.log1p(x) if v == "R" else np.log(x)
+        ax[1, j].hist(lx, bins=40, color=HIJAU, lw=0)
+        ax[1, j].set_title(("log(1 + R)", "log F", "log M")[j],
+                           fontsize=6)
+        for s in ax[:, j]:
+            s.tick_params(labelsize=5.5)
+            s.set_yticks([])
+            _rapikan(s)
+            s.spines["left"].set_visible(False)
+    fig.tight_layout(h_pad=0.8, w_pad=0.6)
+    simpan(fig, "bab19-sebaran")
+
+
+def bab19_pilihk():
+    from sklearn.cluster import KMeans
+    from sklearn.metrics import (calinski_harabasz_score,
+                                 davies_bouldin_score, silhouette_score)
+    from sklearn.mixture import GaussianMixture
+    from bab09_pilih import kestabilan
+    from bab19_data import fitur_log
+    Z = fitur_log(_rfm19())
+    Ks = np.arange(2, 11)
+    hasil = {k: [] for k in ("inersia", "silhouette", "Calinski-Harabasz",
+                             "Davies-Bouldin", "kestabilan",
+                             "BIC campuran Gaussian")}
+    for K in Ks:
+        km = KMeans(K, n_init=10, random_state=BENIH).fit(Z)
+        gm = GaussianMixture(K, covariance_type="full", n_init=3,
+                             random_state=BENIH).fit(Z)
+        for nama, v in zip(hasil, (km.inertia_,
+                                   silhouette_score(Z, km.labels_),
+                                   calinski_harabasz_score(Z, km.labels_),
+                                   davies_bouldin_score(Z, km.labels_),
+                                   kestabilan(Z, K), gm.bic(Z))):
+            hasil[nama].append(v)
+    terbaik = {"silhouette": np.argmax, "Calinski-Harabasz": np.argmax,
+               "Davies-Bouldin": np.argmin, "kestabilan": np.argmax,
+               "BIC campuran Gaussian": np.argmin}
+    fig, ax = plt.subplots(2, 3, figsize=(4.7, 2.6), sharex=True)
+    for s, (nama, v) in zip(ax.flat, hasil.items()):
+        s.plot(Ks, v, "o-", ms=2.5, lw=0.9, color=BIRU)
+        if nama in terbaik:
+            i = terbaik[nama](v)
+            s.plot(Ks[i], v[i], "o", ms=5, mfc="none", color=JINGGA)
+        s.set_title(nama, fontsize=6.5)
+        s.tick_params(labelsize=5.5)
+        s.set_xticks(Ks)
+        _rapikan(s)
+    for s in ax[1]:
+        s.set_xlabel("K", fontsize=6.5)
+    fig.tight_layout(h_pad=0.6, w_pad=0.6)
+    simpan(fig, "bab19-pilihk")
+
+
+def _sumbu_log(s, x, y):
+    s.set_xscale("log")
+    s.set_yscale("log")
+    s.set_xlabel(x, fontsize=6.5)
+    s.set_ylabel(y, fontsize=6.5)
+    s.tick_params(labelsize=5.5)
+    _rapikan(s)
+
+
+def bab19_segmen():
+    from bab19_segmen import segmen
+    tabel = _rfm19()
+    label, _ = segmen(tabel)
+    rng = np.random.default_rng(BENIH)
+    goyang = np.exp(rng.uniform(-0.15, 0.15, len(tabel)))
+    warna = [ABU, HIJAU, JINGGA, BIRU]
+    fig, ax = plt.subplots(1, 2, figsize=(4.7, 2.2))
+    for k in range(4):
+        m = label == k
+        ax[0].scatter(tabel.F[m] * goyang[m], tabel.M[m], s=1.2,
+                      color=warna[k], lw=0, label=f"segmen {k + 1}")
+        ax[1].scatter(tabel.R[m] + 1, tabel.M[m], s=1.2,
+                      color=warna[k], lw=0)
+    _sumbu_log(ax[0], "F (faktur, digoyang sedikit)", "M (pound)")
+    _sumbu_log(ax[1], "1 + R (hari)", "M (pound)")
+    ax[0].legend(fontsize=5.5, markerscale=4, loc="lower right")
+    kunci_label(ax[0], "x", "y")
+    kunci_label(ax[1], "x", "y")
+    fig.tight_layout(w_pad=1.0)
+    simpan(fig, "bab19-segmen")
+
+
+def bab19_gmm():
+    from sklearn.mixture import GaussianMixture
+    from bab19_data import fitur_log
+    tabel = _rfm19()
+    gm = GaussianMixture(6, covariance_type="full", n_init=3,
+                         random_state=BENIH).fit(fitur_log(tabel))
+    lab = gm.predict(fitur_log(tabel))
+    rng = np.random.default_rng(BENIH)
+    goyang = np.exp(rng.uniform(-0.15, 0.15, len(tabel)))
+    warna = [BIRU, JINGGA, HIJAU, MERAH, ABU, "#8A6D3B"]
+    fig, ax = plt.subplots(figsize=(3.2, 2.2))
+    for k in range(6):
+        m = lab == k
+        ax.scatter(tabel.F[m] * goyang[m], tabel.M[m], s=1.2,
+                   color=warna[k], lw=0)
+    _sumbu_log(ax, "F (faktur, digoyang sedikit)", "M (pound)")
+    kunci_label(ax, "x", "y")
+    fig.tight_layout()
+    simpan(fig, "bab19-gmm")
+
+
 if __name__ == "__main__":
     pola = re.compile(r"^bab\d\d_")
     pilihan = sys.argv[1:]

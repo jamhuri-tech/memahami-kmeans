@@ -130,6 +130,14 @@ Versi yang dipakai buku: Python 3.9.6 dengan pustaka di `requirements.txt`. Seti
 - `bab18_lloydmax.py`: kuantisasi skalar Lloyd-Max untuk sebaran normal baku.
 - `bab18_warna.py`: kuantisasi warna gambar china.jpg dari scikit-learn.
 
+### Bab 19 - Studi Kasus Utuh
+
+- `bab19_data.py`: data Online Retail (UCI 352) dan ringkasan RFM per pelanggan.
+- `bab19_masadepan.py`: apakah segmen meramalkan belanja berikutnya?
+- `bab19_pilih.py`: memilih K untuk fitur log RFM.
+- `bab19_segmen.py`: empat segmen K-means pada fitur log RFM.
+- `bab19_skala.py`: sebaran R, F, M dan akibat penskalaan pada K-means, K = 4.
+
 ## Lisensi
 
 Kode boleh dipakai, disalin, diubah, dan disebarluaskan secara bebas untuk keperluan apa pun, termasuk komersial, tanpa kewajiban mencantumkan sumber (lisensi MIT-0). Teks buku tidak termasuk dalam lisensi ini.
