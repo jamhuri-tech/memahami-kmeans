@@ -138,6 +138,13 @@ Versi yang dipakai buku: Python 3.9.6 dengan pustaka di `requirements.txt`. Seti
 - `bab19_segmen.py`: empat segmen K-means pada fitur log RFM.
 - `bab19_skala.py`: sebaran R, F, M dan akibat penskalaan pada K-means, K = 4.
 
+### Bab 20 - Ke Mana Setelah Ini
+
+- `bab20_coreset.py`: coreset ringan (Bachem, Lucic, dan Krause 2018).
+- `bab20_kepadatan.py`: HDBSCAN pada enam data Bab 11 dan pada fitur log RFM Bab 19.
+- `bab20_representasi.py`: K-means pada representasi yang berbeda.
+- `bab20_ward.py`: clustering hierarkis Ward sebagai pembanding dan awal K-means.
+
 ## Lisensi
 
 Kode boleh dipakai, disalin, diubah, dan disebarluaskan secara bebas untuk keperluan apa pun, termasuk komersial, tanpa kewajiban mencantumkan sumber (lisensi MIT-0). Teks buku tidak termasuk dalam lisensi ini.

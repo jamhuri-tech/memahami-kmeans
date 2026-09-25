@@ -1794,6 +1794,92 @@ def bab19_gmm():
     simpan(fig, "bab19-gmm")
 
 
+# =====================================================================
+#  Bab 20 -- Ke mana setelah ini
+# =====================================================================
+def bab20_hdbscan():
+    from sklearn.cluster import HDBSCAN
+    from bab19_data import fitur_log
+    tabel = _rfm19()
+    rng = np.random.default_rng(BENIH)
+    goyang = tabel.assign(F=tabel.F + rng.uniform(-0.5, 0.5, len(tabel)))
+    lab_a = HDBSCAN(min_cluster_size=50).fit(fitur_log(tabel)).labels_
+    lab_b = HDBSCAN(min_cluster_size=50).fit(fitur_log(goyang)).labels_
+    warna = [BIRU, JINGGA, HIJAU, MERAH, "#8A6D3B"]
+    fig, ax = plt.subplots(1, 2, figsize=(4.7, 2.2), sharey=True)
+    for s, T, lab, judul in ((ax[0], tabel, lab_a, "F bilangan bulat"),
+                             (ax[1], goyang, lab_b, "F digoyang")):
+        g = np.exp(rng.uniform(-0.12, 0.12, len(T))) if s is ax[0] \
+            else np.ones(len(T))
+        m = lab < 0
+        s.scatter(T.F[m] * g[m], T.M[m], s=1.0, color=ABU_GARIS, lw=0)
+        for k in range(lab.max() + 1):
+            m = lab == k
+            s.scatter(T.F[m] * g[m], T.M[m], s=1.2, color=warna[k % 5],
+                      lw=0)
+        s.set_title(f"{judul}: {lab.max() + 1} klaster, "
+                    f"noise {angka((lab < 0).mean() * 100, 0)}%",
+                    fontsize=6.5)
+        _sumbu_log(s, "F (faktur)", "M (pound)" if s is ax[0] else "")
+        kunci_label(s, "x", "y")
+    fig.tight_layout(w_pad=0.8)
+    simpan(fig, "bab20-hdbscan")
+
+
+def bab20_coreset():
+    from bab20_coreset import coreset, data_coreset
+    X = data_coreset()
+    rng = np.random.default_rng(1)
+    fig, ax = plt.subplots(1, 2, figsize=(4.7, 2.3), sharex=True,
+                           sharey=True)
+    S = X[rng.choice(len(X), 300, replace=False)]
+    jauh = (S[:, 0] > 30).sum()
+    ax[0].scatter(*S.T, s=2, color=BIRU, lw=0)
+    ax[0].set_title(f"sampel seragam: {jauh} dari 300 titik\n"
+                    "di gumpalan kecil", fontsize=6.5)
+    S, w = coreset(X, 300, rng)
+    jauh = (S[:, 0] > 30).sum()
+    ax[1].scatter(*S.T, s=2, color=JINGGA, lw=0)
+    ax[1].set_title(f"coreset: {jauh} dari 300 titik\n"
+                    "di gumpalan kecil", fontsize=6.5)
+    for s in ax:
+        s.annotate("gumpalan kecil\n(500 titik)", (40, 40),
+                   xytext=(22, 32), fontsize=5.5, color=ABU,
+                   arrowprops=dict(arrowstyle="->", color=ABU, lw=0.5))
+        s.set_aspect("equal")
+        s.tick_params(labelsize=5.5)
+        _rapikan(s)
+    fig.tight_layout(w_pad=0.8)
+    simpan(fig, "bab20-coreset")
+
+
+def bab20_tsne():
+    import warnings
+    from sklearn.cluster import KMeans
+    from sklearn.datasets import load_digits
+    from sklearn.manifold import TSNE
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    X, y = load_digits(return_X_y=True)
+    T = TSNE(2, init="pca", random_state=0).fit_transform(X)
+    U = np.random.default_rng(BENIH).uniform(size=(1500, 10))
+    TU = TSNE(2, init="pca", random_state=0).fit_transform(U)
+    lab = KMeans(10, n_init=10, random_state=BENIH).fit(TU).labels_
+    cmap = plt.get_cmap("tab10")
+    fig, ax = plt.subplots(1, 2, figsize=(4.7, 2.3))
+    ax[0].scatter(*T.T, s=1.2, c=[cmap(v) for v in y], lw=0)
+    ax[0].set_title("digits, warna = angka sebenarnya", fontsize=6.5)
+    ax[1].scatter(*TU.T, s=1.2, c=[cmap(v) for v in lab], lw=0)
+    ax[1].set_title("seragam 10 dimensi, warna = K-means", fontsize=6.5)
+    for s in ax:
+        s.set_xticks([])
+        s.set_yticks([])
+        s.set_aspect("equal")
+        for sisi in s.spines.values():
+            sisi.set_color(ABU_GARIS)
+    fig.tight_layout(w_pad=0.8)
+    simpan(fig, "bab20-tsne")
+
+
 if __name__ == "__main__":
     pola = re.compile(r"^bab\d\d_")
     pilihan = sys.argv[1:]
